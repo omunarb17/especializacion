@@ -130,7 +130,7 @@ with col1:
 with col2:
     fecha_fin = st.date_input("📅 Última Cotización", min_value=df['fecha'].min().date(), max_value=ultimo_dia_mes_anterior)
 
-num_periodos = st.number_input("Número de periodos laborales", min_value=1, max_value=100, value=1)
+num_periodos = st.number_input("Número de periodos laborales", min_value=1, max_value=500, value=1)
 
 periodos_laborales = []
 for i in range(num_periodos):
