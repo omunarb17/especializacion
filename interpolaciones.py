@@ -35,6 +35,7 @@ def calcular_ipc_inicial_interpolado(fecha, df_ipc):
         return interpolar_valor(ipc_f1[0], ipc_f2[0], t1, t2)
     
     return ipc_f2[0] if len(ipc_f2) > 0 else None
+
 def calcular_ipc_final_interpolado(fecha_fin, df_ipc):
     """Calcula el IPC final interpolado correctamente según la fecha de finalización."""
     
@@ -56,3 +57,54 @@ def calcular_ipc_final_interpolado(fecha_fin, df_ipc):
         return interpolar_valor(ipc_f1[0], ipc_f2[0], t1, t2)  # Aplicar interpolación
     
     return ipc_f2[0] if len(ipc_f2) > 0 else None  # Si no hay interpolación, devolver último IPC disponible
+
+
+
+def obtener_ipc_inicial_final(fecha_inicial, fecha_final, df_ipc):
+    """Obtiene el IPC inicial y final sin interpolar, solo extrayendo de la tabla."""
+    
+    ipc_inicial = df_ipc.loc[df_ipc['fecha'] == pd.Timestamp(fecha_inicial), 'IPCac'].values
+    ipc_final = df_ipc.loc[df_ipc['fecha'] == pd.Timestamp(fecha_final), 'IPCac'].values
+    
+    return (ipc_inicial[0] if len(ipc_inicial) > 0 else None, 
+            ipc_final[0] if len(ipc_final) > 0 else None)
+
+
+
+
+
+def calcular_ipc_final_sin_interpolacion(fecha_fin, df_ipc):
+    """Obtiene el IPC final sin interpolación, tomando el valor más cercano disponible en la tabla."""
+    
+    anio = fecha_fin.year
+    mes = fecha_fin.month
+
+    # Seleccionar la fecha clave para el IPC final
+    F2 = obtener_ultimo_dia_mes(anio, mes)  # Último día del mes
+
+    # Obtener el valor de IPC sin interpolación
+    ipc_f2 = df_ipc.loc[df_ipc['fecha'] == pd.Timestamp(F2), 'IPCac'].values
+
+    # Devolver el IPC encontrado en la tabla
+    return ipc_f2[0] if len(ipc_f2) > 0 else None
+
+
+
+def calcular_ipc_inicial_sin_interpolacion(fecha, df_ipc):
+    """Obtiene el IPC inicial sin interpolación, tomando el valor del último día del mes anterior o el primer día del mes actual."""
+    
+    anio = fecha.year
+    mes = fecha.month
+
+    # Si el mes es enero, tomamos el IPC de diciembre del año anterior
+    if mes == 1:
+        F1 = date(anio - 1, 12, 31)  # Último día de diciembre del año anterior
+    else:
+        # Si no es enero, tomamos el IPC del último día del mes anterior
+        F1 = obtener_ultimo_dia_mes(anio, mes - 1)
+
+    # Obtener el IPC sin interpolación
+    ipc_f1 = df_ipc.loc[df_ipc['fecha'] == pd.Timestamp(F1), 'IPCac'].values
+
+    # Devolver el IPC encontrado en la tabla
+    return ipc_f1[0] if len(ipc_f1) > 0 else None

@@ -3,19 +3,15 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 import openpyxl
 from cargue_datos import cargar_datos_excel
-from interpolaciones import calcular_ipc_inicial_interpolado, calcular_ipc_final_interpolado, obtener_ipc_inicial_final, calcular_ipc_inicial_sin_interpolacion, calcular_ipc_final_sin_interpolacion
-
-
-from datetime import timedelta
-import pandas as pd
+from interpolaciones import calcular_ipc_inicial_interpolado, calcular_ipc_final_interpolado
 
 def generar_tabla_periodos(fecha_inicio, fecha_fin, df_ipc, periodos_laborales):
-    """Genera una tabla con los periodos desglosados por mes incluyendo datos de IPC y cotización sin interpolación."""
+    """Genera una tabla con los periodos desglosados por mes incluyendo datos de IPC y cotización con interpolación."""
     periodos = []
     fecha_actual = fecha_inicio
 
     # Calcular IPC Final una sola vez usando la fecha de fin seleccionada por el usuario
-    ipc_final = calcular_ipc_final_sin_interpolacion(fecha_fin, df_ipc)
+    ipc_final = calcular_ipc_final_interpolado(fecha_fin, df_ipc)
 
     while fecha_actual <= fecha_fin:
         anio = fecha_actual.year
@@ -29,6 +25,7 @@ def generar_tabla_periodos(fecha_inicio, fecha_fin, df_ipc, periodos_laborales):
         for periodo in periodos_laborales:
             if periodo['fecha_inicio'] <= fecha_actual <= periodo['fecha_fin']:
                 desde = max(desde, periodo['fecha_inicio'])
+              
                 break
 
         # Ajustar la fecha de fin para que coincida con la fecha de fin del periodo laboral
@@ -57,8 +54,8 @@ def generar_tabla_periodos(fecha_inicio, fecha_fin, df_ipc, periodos_laborales):
             dias_cotizados = 0
             semanas_cotizados = 0
 
-        # Calcular IPC Inicial individualmente para cada mes sin interpolación
-        ipc_inicial = calcular_ipc_inicial_sin_interpolacion(desde, df_ipc)
+        # Calcular IPC Inicial individualmente para cada mes
+        ipc_inicial = calcular_ipc_inicial_interpolado(desde, df_ipc)
 
         salario_actualizado = None
         if ipc_inicial and ipc_final:
@@ -73,7 +70,6 @@ def generar_tabla_periodos(fecha_inicio, fecha_fin, df_ipc, periodos_laborales):
         fecha_actual = hasta + timedelta(days=1)
 
     return pd.DataFrame(periodos)
-
 
 def calcular_resumen_ibl(df_periodos):
     """Calcula el total de días cotizados, semanas cotizadas y el IBL basado en los últimos 120 meses con cotización."""
@@ -110,8 +106,6 @@ def calcular_resumen_ibl(df_periodos):
         "📊 Semanas Cotizadas": [f"{total_semanas_cotizados:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")],
         "💰 IBL (Últimos 120 meses)": [f"${ibl_promedio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")]
     })
-
-
 
 st.set_page_config(page_title="Calculadora IBL", page_icon="📊", layout="wide")
 st.title("📊 Calculadora de Índice de Base de Liquidaciones (IBL)-OMB")
@@ -152,13 +146,11 @@ if generar:
     else:
         tabla_periodos = generar_tabla_periodos(fecha_inicio, fecha_fin, df, periodos_laborales)
 
-         # Mostrar resumen en la parte superior
+        # Mostrar resumen en la parte superior
         resumen_ibl = calcular_resumen_ibl(tabla_periodos)
         st.write("### 📌 Resumen del periodo seleccionado")
         st.dataframe(resumen_ibl, height=80, use_container_width=True)
 
-
-      
         # Mostrar desglose mensual abajo
         st.write("### 📋 Desglose mensual del periodo seleccionado:")
         st.dataframe(tabla_periodos.drop(columns=["Salario Actualizado Numérico","Fecha"], errors="ignore"))
